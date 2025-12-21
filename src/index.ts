@@ -15,8 +15,8 @@ import { UserModel } from "./models/User.js";
 import { ContentModel } from "./models/Content.js";
 
 // 5️⃣ Validation schemas
-import { signupSchema, signinSchema } from "./schemas/auth.js";
-import { contentSchema } from "./schemas/content.js";
+import { signupSchema, signinSchema } from "./zod/auth.js";
+import { contentSchema } from "./zod/content.js";
 
 // 6️⃣ Middleware & types
 import { userMiddleware } from "./middleware.js";
