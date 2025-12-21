@@ -5,3 +5,5 @@ npm i ts-node-dev -D
 npx tsc --init
 npm i mongoose
 npm i jsonwebtoken @types/jsonwebtoken
+npm i zod bcrypt
+npm i --save-dev @types/bcrypt
