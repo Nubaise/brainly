@@ -1,13 +1,15 @@
-import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
-interface IUser {
-  username: string;
-  password: string;
+export async function connectDB() {
+  try {
+    if (!process.env.MONGO_URL) {
+      throw new Error("MONGO_URL is not defined in environment variables");
+    }
+
+    await mongoose.connect(process.env.MONGO_URL);
+    console.log("✅ MongoDB connected");
+  } catch (error) {
+    console.error("❌ MongoDB connection failed:", error);
+    process.exit(1);
+  }
 }
-
-const UserSchema = new Schema<IUser>({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
-
-export const UserModel = model<IUser>("User", UserSchema);

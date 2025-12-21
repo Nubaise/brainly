@@ -1,12 +1,19 @@
 import express from "express";
-import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
-import { UserModel } from "./db.js";
-import {z} from "zod";
+import dotenv from "dotenv";
+import { connectDB } from "./db.js";
+
+import { UserModel } from "./models/User.js";
+
+import { z } from "zod";
 import bcrypt from "bcrypt";
 
+
+
+dotenv.config();
 const app = express();
 app.use(express.json());
+// Connect to MongoDB
+connectDB();
 
 // Zod schema
 const signupSchema = z.object({
@@ -88,3 +95,8 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
 });
 
 
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
