@@ -9,6 +9,7 @@ import { connectDB } from "./db.js";
 // 3️⃣ Security / auth
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 // 4️⃣ Database models
 import { UserModel } from "./models/User.js";
@@ -232,14 +233,52 @@ app.delete(
 );
 
 
-app.post("/api/v1/brain/share", async (req, res) => {
-  // Share note logic will go here
-  res.send("Share note endpoint");
-});
+
+app.post(
+  "/api/v1/brain/share",
+  userMiddleware,
+  async (req: AuthRequest, res) => {
+    const { contentId } = req.body;
+
+    if (!req.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const content = await ContentModel.findOne({
+      _id: contentId,
+      userId: req.userId
+    });
+
+    if (!content) {
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    // generate random share link
+    const shareLink = crypto.randomBytes(8).toString("hex");
+
+    content.shareLink = shareLink;
+    await content.save();
+
+    res.json({
+      message: "Share link created",
+      shareLink
+    });
+  }
+);
+
+
 
 app.get("/api/v1/brain/:shareLink", async (req, res) => {
-  // Get shared note logic will go here
-  res.send("Get shared note endpoint");
+  const { shareLink } = req.params;
+
+  const content = await ContentModel.findOne({ shareLink })
+    .populate("userId", "username");
+
+  if (!content) {
+    return res.status(404).json({ message: "Invalid share link" });
+  }
+
+  res.json(content);
 });
 
 

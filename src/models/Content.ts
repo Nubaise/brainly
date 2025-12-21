@@ -5,6 +5,7 @@ export interface IContent {
   link?: string;
   tags: mongoose.Types.ObjectId[];
   userId: mongoose.Types.ObjectId;
+  shareLink?: string;
 }
 
 const ContentSchema = new Schema<IContent>(
@@ -15,17 +16,36 @@ const ContentSchema = new Schema<IContent>(
       minlength: 1,
       maxlength: 200,
     },
-    link: String,
-    tags: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
+
+    link: {
+      type: String,
+    },
+
+    tags: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: "Tag",
+      },
+    ],
+
     userId: {
       type: mongoose.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
+    // 👇 for /brain/share
+    shareLink: {
+      type: String,
+      unique: true,
+      sparse: true, // allows multiple docs without shareLink
+    },
   },
   { timestamps: true }
 );
 
+// helpful indexes
 ContentSchema.index({ userId: 1 });
+ContentSchema.index({ shareLink: 1 });
 
 export const ContentModel = model<IContent>("Content", ContentSchema);
