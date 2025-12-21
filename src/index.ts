@@ -171,11 +171,22 @@ app.post(
 );
 
 
+app.get(
+  "/api/v1/content",
+  userMiddleware,
+  async (req: AuthRequest, res) => {
+    if (!req.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-app.get("/api/v1/content", async (req, res) => {
-  // Get all notes logic will go here
-  res.send("Get all notes endpoint");
-});
+    const contents = await ContentModel.find({
+      userId: req.userId,
+    }).populate("userId", "username");
+
+    res.json(contents);
+  }
+);
+
 
 app.delete("/api/v1/content", async (req, res) => {
   // Delete note logic will go here
