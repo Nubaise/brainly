@@ -1,0 +1,7 @@
+npm init -p
+npm i typescript
+npm i express @types/express
+npm i ts-node-dev -D
+npx tsc --init
+npm i mongoose
+npm i jsonwebtoken @types/jsonwebtoken
