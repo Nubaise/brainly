@@ -16,7 +16,7 @@ import { ContentModel } from "./models/Content.js";
 
 // 5️⃣ Validation schemas
 import { signupSchema, signinSchema } from "./zod/auth.js";
-import { contentSchema } from "./zod/content.js";
+import { contentSchema, deleteContentSchema } from "./zod/content.js";
 
 // 6️⃣ Middleware & types
 import { userMiddleware } from "./middleware.js";
@@ -188,10 +188,49 @@ app.get(
 );
 
 
-app.delete("/api/v1/content", async (req, res) => {
-  // Delete note logic will go here
-  res.send("Delete note endpoint");
-});
+app.delete(
+  "/api/v1/content",
+  userMiddleware,
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const parsed = deleteContentSchema.safeParse(req.query);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid content id",
+          errors: parsed.error.issues,
+        });
+      }
+
+      const { id } = parsed.data;
+
+      const deleted = await ContentModel.findOneAndDelete({
+        _id: id,
+        userId: req.userId, // 🔒 ownership check
+      });
+
+      if (!deleted) {
+        return res.status(404).json({
+          message: "Content not found or not authorized",
+        });
+      }
+
+      res.json({
+        message: "Content deleted successfully",
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        message: "Internal server error",
+      });
+    }
+  }
+);
+
 
 app.post("/api/v1/brain/share", async (req, res) => {
   // Share note logic will go here

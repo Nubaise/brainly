@@ -7,3 +7,10 @@ const contentSchema = z.object({
 
 
 export { contentSchema };
+
+
+const deleteContentSchema = z.object({
+  id: z.string().min(1),
+});
+
+export { deleteContentSchema };
