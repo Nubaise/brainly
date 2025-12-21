@@ -1,12 +1,27 @@
+// 1️⃣ Framework / server
 import express from "express";
+
+// 2️⃣ Environment & DB
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import { connectDB } from "./db.js";
 
-import { UserModel } from "./models/User.js";
-
-import { z } from "zod";
+// 3️⃣ Security / auth
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
+// 4️⃣ Database models
+import { UserModel } from "./models/User.js";
+import { ContentModel } from "./models/Content.js";
+
+// 5️⃣ Validation schemas
+import { signupSchema, signinSchema } from "./schemas/auth.js";
+import { contentSchema } from "./schemas/content.js";
+
+// 6️⃣ Middleware & types
+import { userMiddleware } from "./middleware.js";
+import type { AuthRequest } from "./middleware.js";
+
 
 
 
@@ -16,7 +31,7 @@ app.use(express.json());
 // Connect to MongoDB
 connectDB();
 
-import { signupSchema, signinSchema } from "./schemas/auth.js";
+
 
 app.post("/api/v1/signup", async (req, res) => {
   try {
@@ -110,10 +125,52 @@ app.post("/api/v1/signin", async (req, res) => {
     });
   }
 });
-app.post("/api/v1/content", async (req, res) => {
-  // Create note logic will go here
-  res.send("Create note endpoint");
-});
+
+
+app.post(
+  "/api/v1/content",
+  userMiddleware,
+  async (req: AuthRequest, res) => {
+    try {
+      const parsed = contentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid input",
+          errors: parsed.error.issues,
+        });
+      }
+
+      if (!req.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { title, link } = parsed.data;
+
+      const content: {
+        title: string;
+        userId: mongoose.Types.ObjectId;
+        link?: string;
+      } = {
+        title,
+        userId: new mongoose.Types.ObjectId(req.userId),
+      };
+
+      if (link) {
+        content.link = link;
+      }
+
+      await ContentModel.create(content);
+
+      res.json({ message: "Content created successfully" });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+
 
 app.get("/api/v1/content", async (req, res) => {
   // Get all notes logic will go here
