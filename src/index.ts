@@ -14,6 +14,8 @@ import crypto from "crypto";
 // 4️⃣ Database models
 import { UserModel } from "./models/User.js";
 import { ContentModel } from "./models/Content.js";
+import { LinkModel } from "./models/Link.js";
+import { TagModel } from "./models/Tag.js";
 
 // 5️⃣ Validation schemas
 import { signupSchema, signinSchema } from "./zod/auth.js";
@@ -237,78 +239,41 @@ app.post(
   "/api/v1/brain/share",
   userMiddleware,
   async (req: AuthRequest, res) => {
-    try {
-      if (!req.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      const { contentId } = req.body;
-
-      if (!contentId) {
-        return res.status(400).json({ message: "contentId is required" });
-      }
-
-      // Find content owned by this user
-      const content = await ContentModel.findOne({
-        _id: contentId,
-        userId: req.userId,
-      });
-
-      if (!content) {
-        return res.status(404).json({
-          message: "Content not found or not authorized",
-        });
-      }
-
-      // If already shared, reuse the link
-      if (content.shareLink) {
-        return res.json({
-          message: "Already shared",
-          shareLink: content.shareLink,
-        });
-      }
-
-      // Generate new share link
-      const shareLink = crypto.randomBytes(8).toString("hex");
-
-      content.shareLink = shareLink;
-      await content.save();
-
-      res.json({
-        message: "Share link created",
-        shareLink,
-      });
-
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Internal server error" });
+    if (!req.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
+
+    const hash = crypto.randomBytes(8).toString("hex");
+
+    const link = await LinkModel.findOneAndUpdate(
+      { userId: req.userId },       // 🔒 one link per user
+      { hash },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      message: "Share link created",
+      shareLink: link.hash,
+    });
   }
 );
 
+
 app.get("/api/v1/brain/:shareLink", async (req, res) => {
-  try {
-    const { shareLink } = req.params;
+  const { shareLink } = req.params;
 
-    const content = await ContentModel.findOne({ shareLink })
-      .populate("userId", "username")
-      .populate("tags", "title");
-
-    if (!content) {
-      return res.status(404).json({
-        message: "Invalid or expired share link",
-      });
-    }
-
-    res.json(content);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      message: "Internal server error",
-    });
+  const link = await LinkModel.findOne({ hash: shareLink });
+  if (!link) {
+    return res.status(404).json({ message: "Invalid share link" });
   }
+
+  const content = await ContentModel.find({
+    userId: link.userId,
+  }).populate("userId", "username");
+
+  res.json(content);
 });
+
 
 
 
