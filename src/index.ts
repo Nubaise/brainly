@@ -9,6 +9,7 @@ import { connectDB } from "./db.js";
 // 3️⃣ Security / auth
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 // 4️⃣ Database models
 import { UserModel } from "./models/User.js";
@@ -232,10 +233,58 @@ app.delete(
 );
 
 
-app.post("/api/v1/brain/share", async (req, res) => {
-  // Share note logic will go here
-  res.send("Share note endpoint");
-});
+app.post(
+  "/api/v1/brain/share",
+  userMiddleware,
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { contentId } = req.body;
+
+      if (!contentId) {
+        return res.status(400).json({ message: "contentId is required" });
+      }
+
+      // Find content owned by this user
+      const content = await ContentModel.findOne({
+        _id: contentId,
+        userId: req.userId,
+      });
+
+      if (!content) {
+        return res.status(404).json({
+          message: "Content not found or not authorized",
+        });
+      }
+
+      // If already shared, reuse the link
+      if (content.shareLink) {
+        return res.json({
+          message: "Already shared",
+          shareLink: content.shareLink,
+        });
+      }
+
+      // Generate new share link
+      const shareLink = crypto.randomBytes(8).toString("hex");
+
+      content.shareLink = shareLink;
+      await content.save();
+
+      res.json({
+        message: "Share link created",
+        shareLink,
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 app.get("/api/v1/brain/:shareLink", async (req, res) => {
   // Get shared note logic will go here
