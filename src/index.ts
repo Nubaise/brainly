@@ -287,9 +287,29 @@ app.post(
 );
 
 app.get("/api/v1/brain/:shareLink", async (req, res) => {
-  // Get shared note logic will go here
-  res.send("Get shared note endpoint");
+  try {
+    const { shareLink } = req.params;
+
+    const content = await ContentModel.findOne({ shareLink })
+      .populate("userId", "username")
+      .populate("tags", "title");
+
+    if (!content) {
+      return res.status(404).json({
+        message: "Invalid or expired share link",
+      });
+    }
+
+    res.json(content);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
 });
+
 
 
 const PORT = process.env.PORT || 3000;
