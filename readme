@@ -8,3 +8,5 @@ npm i jsonwebtoken @types/jsonwebtoken
 npm i zod bcrypt
 npm i --save-dev @types/bcrypt
 npm i dotenv
+
+npm i cors @types/cors

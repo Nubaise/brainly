@@ -25,16 +25,12 @@ import { contentSchema, deleteContentSchema } from "./zod/content.js";
 import { userMiddleware } from "./middleware.js";
 import type { AuthRequest } from "./middleware.js";
 
-
-
-
 dotenv.config();
 const app = express();
 app.use(express.json());
+
 // Connect to MongoDB
 connectDB();
-
-
 
 app.post("/api/v1/signup", async (req, res) => {
   try {
@@ -129,7 +125,6 @@ app.post("/api/v1/signin", async (req, res) => {
   }
 });
 
-
 app.post(
   "/api/v1/content",
   userMiddleware,
@@ -147,19 +142,44 @@ app.post(
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const { title, link } = parsed.data;
+      const { title, link, type, tags } = parsed.data;
 
-      const content: {
-        title: string;
-        userId: mongoose.Types.ObjectId;
-        link?: string;
-      } = {
+      // Build content object
+      const content: any = {
         title,
         userId: new mongoose.Types.ObjectId(req.userId),
       };
 
+      // Add optional fields
       if (link) {
         content.link = link;
+      }
+
+      if (type) {
+        content.type = type;
+      }
+
+      // Handle tags if provided
+      if (tags && tags.length > 0) {
+        const tagIds: mongoose.Types.ObjectId[] = [];
+        
+        for (const tagTitle of tags) {
+          let tag = await TagModel.findOne({
+            title: tagTitle.toLowerCase(),
+            userId: req.userId
+          });
+          
+          if (!tag) {
+            tag = await TagModel.create({
+              title: tagTitle.toLowerCase(),
+              userId: req.userId
+            });
+          }
+          
+          tagIds.push(tag._id as mongoose.Types.ObjectId);
+        }
+        
+        content.tags = tagIds;
       }
 
       await ContentModel.create(content);
@@ -172,7 +192,6 @@ app.post(
     }
   }
 );
-
 
 app.get(
   "/api/v1/content",
@@ -189,7 +208,6 @@ app.get(
     res.json(contents);
   }
 );
-
 
 app.delete(
   "/api/v1/content",
@@ -234,7 +252,6 @@ app.delete(
   }
 );
 
-
 app.post(
   "/api/v1/brain/share",
   userMiddleware,
@@ -258,7 +275,6 @@ app.post(
   }
 );
 
-
 app.get("/api/v1/brain/:shareLink", async (req, res) => {
   const { shareLink } = req.params;
 
@@ -273,9 +289,6 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
 
   res.json(content);
 });
-
-
-
 
 const PORT = process.env.PORT || 3000;
 

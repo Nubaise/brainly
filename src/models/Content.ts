@@ -3,9 +3,10 @@ import mongoose, { Schema, model } from "mongoose";
 export interface IContent {
   title: string;
   link?: string;
+  type?: "twitter" | "youtube" | "linkedin" | "other";
   tags: mongoose.Types.ObjectId[];
   userId: mongoose.Types.ObjectId;
-  shareLink?: string; // 👈 added
+  shareLink?: string;
 }
 
 const ContentSchema = new Schema<IContent>(
@@ -19,6 +20,11 @@ const ContentSchema = new Schema<IContent>(
     },
     link: {
       type: String,
+    },
+    type: {
+      type: String,
+      enum: ["twitter", "youtube", "linkedin", "other"],
+      default: "other"
     },
     tags: [
       {
